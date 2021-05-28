@@ -12,5 +12,5 @@ default: classes
 
 classes: $(CLASSES:.java=.class)
 
-run:
-	@java de.kenran.jlox.Main
+run: classes
+	@java de.kenran.jlox.Lox
