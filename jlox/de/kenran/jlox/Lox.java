@@ -44,10 +44,12 @@ public class Lox {
   private static void run(String source) {
     Scanner scanner = new Scanner(source);
     List<Token> tokens = scanner.scanTokens();
+    Parser parser = new Parser(tokens);
+    Expr expr = parser.parse();
 
-    for (Token token : tokens) {
-      System.out.println(token);
-    }
+    if (hadError) return;
+
+    System.out.println(new AstPrinter().print(expr));
   }
 
   static void error(int line, String message) {
