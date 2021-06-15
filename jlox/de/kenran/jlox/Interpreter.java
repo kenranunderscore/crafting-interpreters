@@ -31,6 +31,10 @@ class Interpreter implements Expr.Visitor<Object> {
     throw new RuntimeError(operator, "Operand must be a number.");
   }
 
+  private void checkDivisionByZero(Token slash, Double x, Double y) {
+    if (y == 0.0) throw new RuntimeError(slash, "Divisor must be non-zero.");
+  }
+
   @Override
   public Object visitUnaryExpr(Expr.Unary expr) {
     Object right = evaluate(expr.right);
@@ -80,7 +84,10 @@ class Interpreter implements Expr.Visitor<Object> {
         return (double) left - (double) right;
       case SLASH:
         checkNumberOperands(expr.operator, left, right);
-        return (double) left / (double) right;
+        double dividend = (double) left;
+        double divisor = (double) right;
+        checkDivisionByZero(expr.operator, dividend, divisor);
+        return dividend / divisor;
       case PLUS:
         if (left instanceof Double && right instanceof Double) {
           return (double) left + (double) right;
