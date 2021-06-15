@@ -1,14 +1,21 @@
 /* Lox's Grammar
 
+   program         -> statement* EOF ;
+
+   statement       -> exprStatement
+                   | printStmt ;
+   exprStmt        -> expression ";" ;
+   printStmt       -> "print" expression ";" ;
+
    expression      -> equality ;
    equality        -> comparison ( ( "!=" | "==" ) comparison )* ;
    comparison      -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
    term            -> factor ( ( "-" | "+" ) factor )* ;
    factor          -> unary ( ( "/" | "*" ) unary )* ;
    unary           -> ( "!" | "-" ) unary
-                      | primary ;
+                   | primary ;
    primary         -> NUMBER | STRING | "true" | "false" | nil
-                      | "(" expression ")" ;
+                   | "(" expression ")" ;
 
 */
 
@@ -16,6 +23,7 @@ package de.kenran.jlox;
 
 import static de.kenran.jlox.TokenType.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class Parser {
@@ -174,11 +182,26 @@ class Parser {
     }
   }
 
-  Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError error) {
-      return null;
-    }
+  private Stmt expressionStatement() {
+    Expr expr = expression();
+    consume(SEMICOLON, "Expected ';' after expression.");
+    return new Stmt.Expression(expr);
+  }
+
+  private Stmt printStatement() {
+    Expr expr = expression();
+    consume(SEMICOLON, "Expected ';' after value.");
+    return new Stmt.Print(expr);
+  }
+
+  private Stmt statement() {
+    if (match(PRINT)) return printStatement();
+    return expressionStatement();
+  }
+
+  List<Stmt> parse() {
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) statements.add(statement());
+    return statements;
   }
 }

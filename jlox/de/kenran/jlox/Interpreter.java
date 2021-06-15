@@ -1,8 +1,23 @@
 package de.kenran.jlox;
 
-class Interpreter implements Expr.Visitor<Object> {
+import java.util.List;
+
+class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   private Object evaluate(Expr expr) {
     return expr.accept(this);
+  }
+
+  @Override
+  public Void visitExpressionStmt(Stmt.Expression stmt) {
+    evaluate(stmt.expression);
+    return null;
+  }
+
+  @Override
+  public Void visitPrintStmt(Stmt.Print stmt) {
+    Object value = evaluate(stmt.expression);
+    System.out.println(stringify(value));
+    return null;
   }
 
   @Override
@@ -119,10 +134,15 @@ class Interpreter implements Expr.Visitor<Object> {
     return object.toString();
   }
 
-  void interpret(Expr expr) {
+  private void execute(Stmt statement) {
+    statement.accept(this);
+  }
+
+  void interpret(List<Stmt> statements) {
     try {
-      Object val = evaluate(expr);
-      System.out.println(stringify(val));
+      for (Stmt statement : statements) {
+        execute(statement);
+      }
     } catch (RuntimeError error) {
       Lox.runtimeError(error);
     }
