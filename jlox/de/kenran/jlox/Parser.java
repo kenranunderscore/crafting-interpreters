@@ -1,12 +1,13 @@
 /* Lox's Grammar
 
-   program         -> statement* EOF ;
-
+   program         -> declaration* EOF ;
+   declaration     -> varDecl
+                   | statement ;
+   varDecl         -> "var" IDENTIFIER ( "=" expression )? ";" ;
    statement       -> exprStatement
                    | printStmt ;
    exprStmt        -> expression ";" ;
    printStmt       -> "print" expression ";" ;
-
    expression      -> equality ;
    equality        -> comparison ( ( "!=" | "==" ) comparison )* ;
    comparison      -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -15,7 +16,7 @@
    unary           -> ( "!" | "-" ) unary
                    | primary ;
    primary         -> NUMBER | STRING | "true" | "false" | nil
-                   | "(" expression ")" ;
+                   | "(" expression ")" | IDENTIFIER ;
 
 */
 
@@ -148,6 +149,10 @@ class Parser {
       return new Expr.Literal(previous().literal);
     }
 
+    if (match(IDENTIFIER)) {
+      return new Expr.Variable(previous());
+    }
+
     if (match(LEFT_PAREN)) {
       Expr expr = expression();
       consume(RIGHT_PAREN, "Expected ')' after expression");
@@ -199,9 +204,33 @@ class Parser {
     return expressionStatement();
   }
 
+  private Stmt varDeclaration() {
+    Token name = consume(IDENTIFIER, "Expected variable name.");
+    Expr initializer = null;
+    if (match(EQUAL)) {
+      initializer = expression();
+    }
+
+    consume(SEMICOLON, "Expected ';' after variable declaration.");
+    return new Stmt.Var(name, initializer);
+  }
+
+  private Stmt declaration() {
+    try {
+      if (match(VAR)) return varDeclaration();
+      return statement();
+    } catch (ParseError error) {
+      synchronize();
+      return null;
+    }
+  }
+
   List<Stmt> parse() {
     List<Stmt> statements = new ArrayList<>();
-    while (!isAtEnd()) statements.add(statement());
+    while (!isAtEnd()) {
+      statements.add(declaration());
+    }
+
     return statements;
   }
 }
