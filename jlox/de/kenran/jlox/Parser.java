@@ -28,8 +28,9 @@
    comparison      -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
    term            -> factor ( ( "-" | "+" ) factor )* ;
    factor          -> unary ( ( "/" | "*" ) unary )* ;
-   unary           -> ( "!" | "-" ) unary
-                   | primary ;
+   unary           -> ( "!" | "-" ) unary | call ;
+   call            -> primary ( "(" arguments? ")" )* ;
+   arguments       -> expression ( "," expression )* ;
    primary         -> NUMBER | STRING | "true" | "false" | nil
                    | "(" expression ")" | IDENTIFIER ;
 
@@ -178,6 +179,35 @@ class Parser {
     return expr;
   }
 
+  private Expr finishCall(Expr callee) {
+    List<Expr> arguments = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (arguments.size() >= 255) {
+          error(peek(), "Can't have more than 255 arguments.");
+        }
+        arguments.add(expression());
+      } while (match(COMMA));
+    }
+
+    Token paren = consume(RIGHT_PAREN, "Expected ')' after arguments.");
+    return new Expr.Call(callee, paren, arguments);
+  }
+
+  private Expr call() {
+    Expr expr = primary();
+
+    while (true) {
+      if (match(LEFT_PAREN)) {
+        expr = finishCall(expr);
+      } else {
+        break;
+      }
+    }
+
+    return expr;
+  }
+
   private Expr unary() {
     if (match(BANG, MINUS)) {
       Token operator = previous();
@@ -185,7 +215,7 @@ class Parser {
       return new Expr.Unary(operator, right);
     }
 
-    return primary();
+    return call();
   }
 
   private ParseError error(Token token, String message) {
