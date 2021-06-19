@@ -15,7 +15,9 @@
    printStmt       -> "print" expression ";" ;
    expression      -> assignment ;
    assignment      -> IDENTIFIER "=" assignment
-                   | equality ;
+                   | logic_or ;
+   logic_or        -> logic_and ( "or" logic_and )* ;
+   logic_and       -> equality ( "and" equality )* ;
    equality        -> comparison ( ( "!=" | "==" ) comparison )* ;
    comparison      -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
    term            -> factor ( ( "-" | "+" ) factor )* ;
@@ -76,8 +78,32 @@ class Parser {
     return false;
   }
 
-  private Expr assignment() {
+  private Expr and() {
     Expr expr = equality();
+
+    while (match(AND)) {
+      Token operator = previous();
+      Expr right = equality();
+      expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  private Expr or() {
+    Expr expr = and();
+
+    while (match(OR)) {
+      Token operator = previous();
+      Expr right = and();
+      expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  private Expr assignment() {
+    Expr expr = or();
 
     if (match(EQUAL)) {
       Token equals = previous();
